@@ -32,14 +32,13 @@ const Input = ({
       {/* 浮动标签容器 */}
       <div className="relative">
         {label && (
-          <motion.label
-            animate={{
-              y: shouldFloat ? -28 : 12,
-              scale: shouldFloat ? 0.85 : 1,
-              x: shouldFloat ? 0 : Icon ? 44 : 16,
+          <label
+            style={{
+              transform: shouldFloat 
+                ? 'translateY(-28px) scale(0.85)' 
+                : `translateY(12px) scale(1) translateX(${Icon ? 44 : 16}px)`,
             }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`absolute left-0 pointer-events-none font-medium transition-colors origin-left z-10 ${
+            className={`absolute left-0 pointer-events-none font-medium origin-left z-10 transition-all duration-200 ${
               shouldFloat ? 'text-xs' : 'text-sm'
             } ${
               error ? 'text-red-600' : 
@@ -57,7 +56,7 @@ const Input = ({
                 *
               </span>
             )}
-          </motion.label>
+          </label>
         )}
         
         {tooltip && (
@@ -100,7 +99,7 @@ const Input = ({
           </div>
         )}
 
-        <motion.input
+        <input
           type={type}
           value={value}
           onChange={onChange}
@@ -108,8 +107,6 @@ const Input = ({
           onBlur={() => setIsFocused(false)}
           disabled={disabled}
           placeholder={shouldFloat ? placeholder : ''}
-          whileFocus={{ scale: 1.005 }}
-          transition={{ duration: 0.2 }}
           className={`w-full px-4 py-3 ${Icon ? 'pl-11' : ''} ${
             error || success ? 'pr-11' : ''
           } border-2 rounded-xl transition-all duration-200 outline-none ${

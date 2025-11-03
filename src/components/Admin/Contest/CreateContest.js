@@ -5,7 +5,7 @@ import {
   Sparkles, Award
 } from 'lucide-react';
 import Button from '../../UI/Button';
-import BasicInfoForm from './BasicInfoForm_Premium';
+import BasicInfoForm from './BasicInfoForm';
 import ResourceConfigForm from './ResourceConfigForm';
 
 /**
@@ -16,6 +16,7 @@ const CreateContest = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [animationDirection, setAnimationDirection] = useState(1); // 1为向前，-1为向后
   
   const [contestData, setContestData] = useState({
     basicInfo: {
@@ -99,32 +100,56 @@ const CreateContest = () => {
         return;
       }
     }
+    setAnimationDirection(1);
     setCurrentStep(prev => Math.min(prev + 1, steps.length));
     setErrors({});
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 延迟滚动，等待动画开始
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   const handlePrevious = () => {
+    setAnimationDirection(-1);
     setCurrentStep(prev => Math.max(prev - 1, 1));
     setErrors({});
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
       console.log('提交赛事数据:', contestData);
-      // TODO: 调用后端API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setShowSuccessModal(true);
       
-      // 2秒后自动收起
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        // navigate('/admin/contest/list');
-      }, 2000);
+      // 调用后端API创建赛事
+      const response = await fetch('http://localhost:3001/api/contests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contestData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ 赛事创建成功, ID:', result.contestId);
+        setShowSuccessModal(true);
+        
+        // 2秒后自动收起
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          // 可选：跳转到赛事列表页
+          // navigate('/admin/contest/list');
+        }, 2000);
+      } else {
+        throw new Error(result.message || '创建失败');
+      }
     } catch (error) {
-      console.error('创建赛事失败:', error);
+      console.error('❌ 创建赛事失败:', error);
+      alert('创建赛事失败: ' + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -175,6 +200,7 @@ const CreateContest = () => {
                     key={step.id}
                     onClick={() => {
                       if (!isPending || isCompleted) {
+                        setAnimationDirection(step.id > currentStep ? 1 : -1);
                         setCurrentStep(step.id);
                       }
                     }}
@@ -328,10 +354,10 @@ const CreateContest = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: animationDirection * 50 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            exit={{ opacity: 0, x: animationDirection * -50 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className="bg-white rounded-2xl shadow-lg border border-neutral-200 mb-6 hover:shadow-xl transition-shadow duration-300"
           >
             {currentStep === 1 && (

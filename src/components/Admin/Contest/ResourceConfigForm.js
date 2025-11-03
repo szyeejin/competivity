@@ -121,6 +121,36 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
     });
   };
 
+  // 添加场地设施标签
+  const addVenueFacility = (venueId, facility) => {
+    if (!facility.trim()) return;
+    onChange({
+      ...data,
+      venue: {
+        ...data.venue,
+        venues: data.venue.venues.map(v =>
+          v.id === venueId ? { ...v, facilities: [...(v.facilities || []), facility] } : v
+        )
+      }
+    });
+  };
+
+  // 删除场地设施标签
+  const removeVenueFacility = (venueId, facilityIndex) => {
+    onChange({
+      ...data,
+      venue: {
+        ...data.venue,
+        venues: data.venue.venues.map(v =>
+          v.id === venueId ? {
+            ...v,
+            facilities: v.facilities.filter((_, idx) => idx !== facilityIndex)
+          } : v
+        )
+      }
+    });
+  };
+
   // 添加人员（组织者/评委/志愿者）
   const addPerson = (role) => {
     const newPerson = {
@@ -227,10 +257,98 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
     });
   };
 
+  // 导出物资清单为CSV
+  const exportMaterialsToCSV = () => {
+    if (data.materials.length === 0) {
+      alert('没有物资数据可导出');
+      return;
+    }
+
+    const headers = ['物资名称', '数量', '单位'];
+    const csvContent = [
+      headers.join(','),
+      ...data.materials.map(m => `${m.name},${m.quantity},${m.unit}`)
+    ].join('\n');
+
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `物资清单_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 从文件导入物资
+  const importMaterialsFromFile = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        // 跳过表头
+        const dataLines = lines.slice(1);
+        const importedMaterials = dataLines.map(line => {
+          const [name, quantity, unit] = line.split(',').map(s => s.trim());
+          return {
+            id: Date.now() + Math.random(),
+            name: name || '',
+            quantity: quantity || '',
+            unit: unit || ''
+          };
+        }).filter(m => m.name); // 过滤空行
+
+        onChange({
+          ...data,
+          materials: [...data.materials, ...importedMaterials]
+        });
+        alert(`成功导入 ${importedMaterials.length} 条物资数据`);
+      } catch (error) {
+        alert('导入失败，请检查文件格式');
+        console.error(error);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // 重置输入
+  };
+
+  // 清空所有物资
+  const clearAllMaterials = () => {
+    if (data.materials.length === 0) return;
+    if (window.confirm('确定要清空所有物资吗？')) {
+      onChange({ ...data, materials: [] });
+    }
+  };
+
   // 计算总预算
   const calculateTotalBudget = () => {
     return data.budget.categories.reduce((sum, cat) => {
       return sum + (parseFloat(cat.amount) || 0);
+    }, 0);
+  };
+
+  // 计算预算使用百分比
+  const getBudgetPercentage = () => {
+    const total = parseFloat(data.budget.total) || 0;
+    if (total === 0) return 0;
+    return (calculateTotalBudget() / total) * 100;
+  };
+
+  // 判断是否超支
+  const isOverBudget = () => {
+    return calculateTotalBudget() > (parseFloat(data.budget.total) || 0);
+  };
+
+  // 计算场地总容量
+  const getTotalVenueCapacity = () => {
+    return data.venue.venues.reduce((sum, venue) => {
+      return sum + (parseInt(venue.capacity) || 0);
     }, 0);
   };
 
@@ -291,9 +409,40 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
                 <label className="text-sm font-medium text-gray-700">
                   预算分类明细
                 </label>
-                <span className="text-sm text-gray-600">
-                  已分配：¥{calculateTotalBudget().toLocaleString()}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600">
+                    已分配：¥{calculateTotalBudget().toLocaleString()}
+                  </span>
+                  <span className={`text-sm font-semibold ${
+                    isOverBudget() ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {getBudgetPercentage().toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* 预算进度条 */}
+              <div className="mb-4">
+                <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      isOverBudget() 
+                        ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                        : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                    }`}
+                    style={{ width: `${Math.min(getBudgetPercentage(), 100)}%` }}
+                  />
+                </div>
+                {isOverBudget() && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                    <svg className="w-4 h-4 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-xs text-red-700">
+                      预算已超支 ¥{(calculateTotalBudget() - (parseFloat(data.budget.total) || 0)).toLocaleString()}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {data.budget.categories.map((category, index) => (
@@ -408,6 +557,56 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="详细地址"
                   />
+                  
+                  {/* 场地设施标签 */}
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-2">场地设施</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(venue.facilities || []).map((facility, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                        >
+                          {facility}
+                          <button
+                            onClick={() => removeVenueFacility(venue.id, idx)}
+                            className="hover:text-blue-900"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        id={`facility-input-${venue.id}`}
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="输入设施名称（如：投影仪、音响）"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const input = e.target;
+                            addVenueFacility(venue.id, input.value);
+                            input.value = '';
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          const input = document.getElementById(`facility-input-${venue.id}`);
+                          if (input && input.value) {
+                            addVenueFacility(venue.id, input.value);
+                            input.value = '';
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+                      >
+                        添加
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))}
 
@@ -620,9 +819,33 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
           title="配置赛事所需设备"
           icon="💻"
           sectionKey="equipment"
+          badge={data.equipment.length > 0 ? `${data.equipment.length} 项` : null}
         />
         {expandedSections.equipment && (
           <div className="p-4 space-y-4 bg-gray-50">
+            {/* 设备统计 */}
+            {data.equipment.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">可用设备</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {data.equipment.filter(e => e.status === 'available').length}
+                  </p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">已预定</p>
+                  <p className="text-xl font-bold text-orange-600">
+                    {data.equipment.filter(e => e.status === 'reserved').length}
+                  </p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">维护中</p>
+                  <p className="text-xl font-bold text-red-600">
+                    {data.equipment.filter(e => e.status === 'maintenance').length}
+                  </p>
+                </div>
+              </div>
+            )}
             {data.equipment.map((item, index) => (
               <div key={item.id} className="p-4 bg-white rounded-lg border border-gray-200">
                 <div className="flex items-start justify-between mb-3">
@@ -654,11 +877,14 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
                   <select
                     value={item.status}
                     onChange={(e) => updateEquipment(item.id, 'status', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      item.status === 'available' ? 'text-green-600' : 
+                      item.status === 'reserved' ? 'text-orange-600' : 'text-red-600'
+                    }`}
                   >
-                    <option value="available">可用</option>
-                    <option value="reserved">已预定</option>
-                    <option value="maintenance">维护中</option>
+                    <option value="available">✅ 可用</option>
+                    <option value="reserved">🔶 已预定</option>
+                    <option value="maintenance">🔧 维护中</option>
                   </select>
                 </div>
               </div>
@@ -683,14 +909,56 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
         />
         {expandedSections.materials && (
           <div className="p-4 space-y-4 bg-gray-50">
-            <div className="flex space-x-3 mb-4">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                批量导入
+            <div className="flex flex-wrap gap-3 mb-4">
+              <input
+                type="file"
+                id="material-import-input"
+                accept=".csv"
+                onChange={importMaterialsFromFile}
+                className="hidden"
+              />
+              <button
+                onClick={() => document.getElementById('material-import-input').click()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                批量导入 CSV
               </button>
-              <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+              <button
+                onClick={exportMaterialsToCSV}
+                disabled={data.materials.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
                 导出物资清单
               </button>
+              {data.materials.length > 0 && (
+                <button
+                  onClick={clearAllMaterials}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-2 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  清空所有
+                </button>
+              )}
             </div>
+
+            {data.materials.length > 0 && (
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>共 {data.materials.length} 项物资，可导出为 CSV 文件进行备份</span>
+                </div>
+              </div>
+            )}
 
             {data.materials.map((item, index) => (
               <div key={item.id} className="p-4 bg-white rounded-lg border border-gray-200">
@@ -751,30 +1019,56 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
         {expandedSections.statistics && (
           <div className="p-4 bg-gray-50">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">预算总额</p>
+              <div className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-gray-600">预算总额</p>
+                  <span className="text-2xl">💰</span>
+                </div>
                 <p className="text-2xl font-bold text-blue-600">
                   ¥{(parseFloat(data.budget.total) || 0).toLocaleString()}
                 </p>
-              </div>
-              <div className="p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">已分配预算</p>
-                <p className="text-2xl font-bold text-green-600">
-                  ¥{calculateTotalBudget().toLocaleString()}
+                <p className="text-xs text-gray-500 mt-1">
+                  {data.budget.categories.length} 个分类
                 </p>
               </div>
-              <div className="p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">场地数量</p>
+              <div className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-gray-600">已分配预算</p>
+                  <span className="text-2xl">📊</span>
+                </div>
+                <p className={`text-2xl font-bold ${
+                  isOverBudget() ? 'text-red-600' : 'text-green-600'
+                }`}>
+                  ¥{calculateTotalBudget().toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {getBudgetPercentage().toFixed(1)}% 使用率
+                </p>
+              </div>
+              <div className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-gray-600">场地数量</p>
+                  <span className="text-2xl">🏢</span>
+                </div>
                 <p className="text-2xl font-bold text-purple-600">
                   {data.venue.venues.length}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  总容量 {getTotalVenueCapacity()} 人
+                </p>
               </div>
-              <div className="p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">总人员数</p>
+              <div className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-gray-600">总人员数</p>
+                  <span className="text-2xl">👥</span>
+                </div>
                 <p className="text-2xl font-bold text-orange-600">
                   {data.personnel.organizers.length + 
                    data.personnel.judges.length + 
                    data.personnel.volunteers.length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  设备 {data.equipment.length} / 物资 {data.materials.length}
                 </p>
               </div>
             </div>

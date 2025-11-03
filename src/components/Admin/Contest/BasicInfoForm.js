@@ -10,6 +10,48 @@ import Button from '../../UI/Button';
 import Switch from '../../UI/Switch';
 import DatePicker from '../../UI/DatePicker';
 
+// 折叠面板组件 - 移到外部避免重新渲染
+const SectionPanel = ({ title, icon: Icon, sectionKey, required, children, isExpanded, onToggle }) => {
+  return (
+    <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white hover:shadow-md transition-all duration-300">
+      <button
+        onClick={() => onToggle(sectionKey)}
+        className="w-full flex items-center justify-between p-5 transition-colors hover:bg-gray-50"
+      >
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            isExpanded
+              ? 'bg-gradient-to-br from-primary-600 to-purple-700 shadow-lg'
+              : 'bg-neutral-100'
+          }`}>
+            <Icon className={`w-5 h-5 ${isExpanded ? 'text-white' : 'text-neutral-500'}`} />
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
+              {required && (
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                  必填
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <ChevronDown className={`w-5 h-5 text-neutral-400 transition-transform duration-200 ${
+          isExpanded ? 'rotate-180' : ''
+        }`} />
+      </button>
+
+      {isExpanded && (
+        <div className="p-6 bg-gradient-to-br from-neutral-50 to-white border-t border-neutral-100">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /**
  * 赛事基础信息表单 - 大厂顶级标准
  * 特性：两列等宽布局、Switch开关、卡片内分栏、浮动标签、渐变边框
@@ -36,67 +78,6 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
     });
   };
 
-  // 折叠面板组件
-  const SectionPanel = ({ title, icon: Icon, sectionKey, required, children }) => {
-    const isExpanded = expandedSections[sectionKey];
-    
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border border-neutral-200 rounded-xl overflow-hidden bg-white hover:shadow-md transition-all duration-300"
-      >
-        <motion.button
-          onClick={() => toggleSection(sectionKey)}
-          whileHover={{ backgroundColor: '#f9fafb' }}
-          className="w-full flex items-center justify-between p-5 transition-colors"
-        >
-          <div className="flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              isExpanded
-                ? 'bg-gradient-to-br from-primary-600 to-purple-700 shadow-lg'
-                : 'bg-neutral-100'
-            }`}>
-              <Icon className={`w-5 h-5 ${isExpanded ? 'text-white' : 'text-neutral-500'}`} />
-            </div>
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
-                {required && (
-                  <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                    必填
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <motion.div
-            animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChevronDown className="w-5 h-5 text-neutral-400" />
-          </motion.div>
-        </motion.button>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <div className="p-6 bg-gradient-to-br from-neutral-50 to-white border-t border-neutral-100">
-                {children}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    );
-  };
-
   const contestTypeOptions = [
     { value: 'algorithm', label: '🧮 算法竞赛' },
     { value: 'application', label: '💻 应用开发' },
@@ -113,6 +94,8 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
         icon={Trophy}
         sectionKey="basic"
         required
+        isExpanded={expandedSections.basic}
+        onToggle={toggleSection}
       >
         {/* 两列等宽布局 (屏幕宽度≥1200px) */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -147,6 +130,8 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
         icon={Calendar}
         sectionKey="timePlace"
         required
+        isExpanded={expandedSections.timePlace}
+        onToggle={toggleSection}
       >
         {/* 两列布局 */}
         <div className="space-y-6">
@@ -206,15 +191,9 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
           </div>
 
           {/* 地点输入框 - 自动折叠 */}
-          <AnimatePresence>
-            {!data.timeAndPlace.onlineMode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Input
+          {!data.timeAndPlace.onlineMode && (
+            <div>
+              <Input
                   label="赛事地点"
                   value={data.timeAndPlace.location}
                   onChange={(e) => handleNestedChange('timeAndPlace', 'location', e.target.value)}
@@ -223,9 +202,8 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
                   placeholder="例如：北京市海淀区中关村大街1号"
                   icon={MapPin}
                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+          )}
 
           {/* 线上赛事提示 */}
           {data.timeAndPlace.onlineMode && (
@@ -246,6 +224,8 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
         title="赛事激励设置"
         icon={Award}
         sectionKey="incentives"
+        isExpanded={expandedSections.incentives}
+        onToggle={toggleSection}
       >
         <div className="space-y-6">
           {/* 卡片内三列分栏 */}
@@ -324,6 +304,8 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
         title="赛事规则说明"
         icon={FileText}
         sectionKey="rules"
+        isExpanded={expandedSections.rules}
+        onToggle={toggleSection}
       >
         <textarea
           value={data.rules}
