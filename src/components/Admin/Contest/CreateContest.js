@@ -7,6 +7,7 @@ import {
 import Button from '../../UI/Button';
 import BasicInfoForm from './BasicInfoForm';
 import ResourceConfigForm from './ResourceConfigForm';
+import { API_ENDPOINTS } from '../../../config/api';
 
 /**
  * 赛事创建主组件 - 大厂顶级标准
@@ -124,7 +125,7 @@ const CreateContest = () => {
       console.log('提交赛事数据:', contestData);
       
       // 调用后端API创建赛事
-      const response = await fetch('http://localhost:3001/api/contests', {
+      const response = await fetch(API_ENDPOINTS.CONTESTS.CREATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

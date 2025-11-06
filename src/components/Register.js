@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ const Register = () => {
       
       try {
         // 调用后端注册API
-        const response = await fetch('http://localhost:5000/api/register', {
+        const response = await fetch(API_ENDPOINTS.AUTH.REGISTER, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

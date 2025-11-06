@@ -5,6 +5,18 @@ import Register from './components/Register';
 import AdminLayout from './components/Admin/AdminLayout';
 import Dashboard from './components/Admin/Dashboard';
 import CreateContest from './components/Admin/Contest/CreateContest';
+import ContestList from './components/Admin/Contest/ContestList';
+import ContestDetail from './components/Admin/Contest/ContestDetail';
+import ContestArchive from './components/Admin/Archive/ContestArchive';
+import RegistrationReview from './components/Admin/Student/RegistrationReview';
+import TeamManagement from './components/Admin/Student/TeamManagement';
+import StudentList from './components/Admin/Student/StudentList';
+import ExpertPool from './components/Admin/Judge/ExpertPool';
+import JudgeAssignment from './components/Admin/Judge/JudgeAssignment';
+import ResultsAnnouncement from './components/Admin/Judge/ResultsAnnouncement';
+import { ContestReview } from './components/Admin/Review';
+import ProgressBoard from './components/Admin/Operations/ProgressBoard';
+import ResourceAllocation from './components/Admin/Operations/ResourceAllocation';
 
 function App() {
   return (
@@ -22,23 +34,24 @@ function App() {
         
         {/* 赛事管理路由 */}
         <Route path="/admin/contest/create" element={<AdminLayout><CreateContest /></AdminLayout>} />
-        <Route path="/admin/contest/review" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">赛事审核</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/contest/list" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">赛事列表</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/contest/archive" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">赛事归档</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
+        <Route path="/admin/contest/review" element={<AdminLayout><ContestReview /></AdminLayout>} />
+        <Route path="/admin/contest/list" element={<AdminLayout><ContestList /></AdminLayout>} />
+        <Route path="/admin/contest/:id" element={<AdminLayout><ContestDetail /></AdminLayout>} />
+        <Route path="/admin/contest/archive" element={<AdminLayout><ContestArchive /></AdminLayout>} />
         
         {/* 学生管理路由 */}
-        <Route path="/admin/student/review" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">报名审核</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/student/team" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">组队管理</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/student/list" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">学生列表</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
+        <Route path="/admin/student/review" element={<AdminLayout><RegistrationReview /></AdminLayout>} />
+        <Route path="/admin/student/team" element={<AdminLayout><TeamManagement /></AdminLayout>} />
+        <Route path="/admin/student/list" element={<AdminLayout><StudentList /></AdminLayout>} />
         
         {/* 评审管理路由 */}
-        <Route path="/admin/judge/experts" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">专家库</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/judge/assign" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">评审分配</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/judge/results" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">结果公示</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
+        <Route path="/admin/judge/experts" element={<AdminLayout><ExpertPool /></AdminLayout>} />
+        <Route path="/admin/judge/assign" element={<AdminLayout><JudgeAssignment /></AdminLayout>} />
+        <Route path="/admin/judge/results" element={<AdminLayout><ResultsAnnouncement /></AdminLayout>} />
         
         {/* 运营管理路由 */}
-        <Route path="/admin/operation/dashboard" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">进度看板</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
-        <Route path="/admin/operation/resources" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">资源调配</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />
+        <Route path="/admin/operation/dashboard" element={<AdminLayout><ProgressBoard /></AdminLayout>} />
+        <Route path="/admin/operation/resources" element={<AdminLayout><ResourceAllocation /></AdminLayout>} />
         
         {/* 系统设置路由 */}
         <Route path="/admin/system/permission" element={<AdminLayout><div className="p-6"><h1 className="text-2xl font-bold">权限管理</h1><p className="text-gray-600 mt-2">此页面开发中...</p></div></AdminLayout>} />

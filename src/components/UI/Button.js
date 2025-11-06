@@ -36,11 +36,23 @@ const Button = ({
       hoverGradient: 'bg-gradient-to-r from-secondary-600 to-secondary-700',
       ring: 'focus:ring-secondary-500',
     },
+    outline: {
+      base: 'bg-white text-neutral-700 border-2 border-neutral-300',
+      gradient: '',
+      hoverGradient: '',
+      ring: 'focus:ring-primary-500',
+    },
     ghost: {
       base: 'bg-white text-neutral-700 border-2 border-neutral-300',
       gradient: '',
       hoverGradient: '',
       ring: 'focus:ring-primary-500',
+    },
+    success: {
+      base: 'text-white shadow-md',
+      gradient: 'bg-gradient-to-r from-green-500 to-green-600',
+      hoverGradient: 'bg-gradient-to-r from-green-600 to-green-700',
+      ring: 'focus:ring-green-500',
     },
     danger: {
       base: 'text-white shadow-md',
@@ -88,8 +100,8 @@ const Button = ({
         <div className={`absolute inset-0 ${config.hoverGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
       )}
       
-      {/* Ghost按钮的hover效果 */}
-      {variant === 'ghost' && (
+      {/* Ghost/Outline按钮的hover效果 */}
+      {(variant === 'ghost' || variant === 'outline') && (
         <div className="absolute inset-0 bg-neutral-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       )}
 

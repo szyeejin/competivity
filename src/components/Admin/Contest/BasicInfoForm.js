@@ -285,7 +285,7 @@ const BasicInfoForm = ({ data, errors, onChange }) => {
               checked={data.incentives.certificate}
               onChange={(checked) => handleNestedChange('incentives', 'certificate', checked)}
               label="颁发参赛证书"
-              description="所有完成赛事的选手都将获得证书"
+              description={data.incentives.certificate ? "所有完成赛事的选手都将获得证书" : "仅获奖选手获得证书"}
             />
           </div>
 

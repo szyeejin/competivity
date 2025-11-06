@@ -60,15 +60,15 @@ const Switch = ({
       >
         {/* 滑块 */}
         <motion.span
-          layout
+          animate={{
+            x: checked ? (size === 'sm' ? 16 : size === 'md' ? 20 : 28) : 2,
+          }}
           transition={{
             type: 'spring',
             stiffness: 500,
             damping: 30,
           }}
-          className={`inline-block ${sizeConfig.thumb} rounded-full bg-white shadow-lg transform transition-transform duration-300 ${
-            checked ? sizeConfig.translate : 'translate-x-0.5'
-          }`}
+          className={`inline-block ${sizeConfig.thumb} rounded-full bg-white shadow-lg`}
         />
       </button>
 

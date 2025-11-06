@@ -1,4 +1,29 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  DollarSign,
+  Building2,
+  Users,
+  Monitor,
+  Package,
+  BarChart3,
+  ChevronDown,
+  Plus,
+  Trash2,
+  Upload,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  X,
+  Search,
+  Filter,
+} from 'lucide-react';
+import Switch from '../../UI/Switch';
+import Modal from '../../UI/Modal';
+import Drawer from '../../UI/Drawer';
+import AnimatedProgress from '../../UI/AnimatedProgress';
+import EnhancedInput from '../../UI/EnhancedInput';
+import DraggableCard from '../../UI/DraggableCard';
 
 /**
  * 赛事资源预配置管理表单组件
@@ -14,6 +39,17 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
     materials: false,
     statistics: false
   });
+
+  // 模态框和抽屉状态
+  const [showVenueModal, setShowVenueModal] = useState(false);
+  const [showPersonnelDrawer, setShowPersonnelDrawer] = useState(false);
+  const [selectedPersonnelRole, setSelectedPersonnelRole] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  // 加载状态
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -352,57 +388,76 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
     }, 0);
   };
 
-  // 卡片标题组件
-  const SectionHeader = ({ title, icon, sectionKey, badge }) => (
-    <button
+  // 卡片标题组件 - 现代化设计
+  const SectionHeader = ({ title, IconComponent, sectionKey, badge }) => (
+    <motion.button
       onClick={() => toggleSection(sectionKey)}
-      className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+      whileHover={{ backgroundColor: 'rgba(249, 250, 251, 1)' }}
+      className="w-full flex items-center justify-between p-5 transition-all duration-200 group"
     >
-      <div className="flex items-center space-x-3">
-        <span className="text-2xl">{icon}</span>
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {badge && (
-          <span className="px-2 py-1 bg-green-100 text-green-600 text-xs font-medium rounded">
-            {badge}
-          </span>
-        )}
+      <div className="flex items-center space-x-4">
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          className="p-2.5 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 transition-all duration-300"
+        >
+          <IconComponent className="w-5 h-5 text-blue-600" />
+        </motion.div>
+        <div className="text-left">
+          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+          {badge && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="inline-flex items-center px-2.5 py-0.5 mt-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-400 to-green-500 text-white"
+            >
+              {badge}
+            </motion.span>
+          )}
+        </div>
       </div>
-      <svg
-        className={`w-5 h-5 text-gray-500 transition-transform ${
-          expandedSections[sectionKey] ? 'rotate-180' : ''
-        }`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
+      <motion.div
+        animate={{ rotate: expandedSections[sectionKey] ? 180 : 0 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
+        <ChevronDown className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+      </motion.div>
+    </motion.button>
   );
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* 1. 预算赛事预算与分类 */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+      >
         <SectionHeader
           title="预设赛事预算与分类"
-          icon="💰"
+          IconComponent={DollarSign}
           sectionKey="budget"
         />
-        {expandedSections.budget && (
-          <div className="p-4 space-y-4 bg-gray-50">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                总预算金额（元）
-              </label>
-              <input
+        <AnimatePresence>
+          {expandedSections.budget && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-white">
+              <EnhancedInput
+                label="总预算金额"
                 type="number"
                 value={data.budget.total}
                 onChange={(e) => handleNestedChange('budget', 'total', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="请输入总预算"
+                placeholder="请输入总预算金额"
+                prefix={<DollarSign className="w-4 h-4" />}
+                suffix={<span className="text-xs text-gray-500">元</span>}
+                helper="设置赛事总预算，系统将自动计算分配比例"
+                required
               />
-            </div>
 
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -421,100 +476,128 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
                 </div>
               </div>
 
-              {/* 预算进度条 */}
+              {/* 预算进度条 - 动态效果 */}
               <div className="mb-4">
-                <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-500 ${
-                      isOverBudget() 
-                        ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                        : 'bg-gradient-to-r from-blue-500 to-blue-600'
-                    }`}
-                    style={{ width: `${Math.min(getBudgetPercentage(), 100)}%` }}
-                  />
-                </div>
-                {isOverBudget() && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                    <svg className="w-4 h-4 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <p className="text-xs text-red-700">
-                      预算已超支 ¥{(calculateTotalBudget() - (parseFloat(data.budget.total) || 0)).toLocaleString()}
-                    </p>
-                  </div>
-                )}
+                <AnimatedProgress
+                  value={calculateTotalBudget()}
+                  max={parseFloat(data.budget.total) || 100}
+                  showPercentage={true}
+                  showValue={true}
+                  variant={isOverBudget() ? 'error' : 'primary'}
+                  size="lg"
+                />
+                <AnimatePresence>
+                  {isOverBudget() && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2"
+                    >
+                      <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-red-700">
+                        预算已超支 ¥{(calculateTotalBudget() - (parseFloat(data.budget.total) || 0)).toLocaleString()}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {data.budget.categories.map((category, index) => (
-                <div key={category.id} className="p-4 bg-white rounded-lg border border-gray-200 mb-3">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-700">分类 {index + 1}</span>
-                    <button
+                <DraggableCard key={category.id} className="mb-3 p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                        分类 {index + 1}
+                      </span>
+                      <span className="text-lg font-bold text-gray-900">
+                        ¥{(parseFloat(category.amount) || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => removeBudgetCategory(category.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input
+                    <EnhancedInput
                       type="text"
                       value={category.name}
                       onChange={(e) => updateBudgetCategory(category.id, 'name', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="分类名称（如：场地租赁）"
+                      inputClassName="text-sm"
                     />
-                    <input
+                    <EnhancedInput
                       type="number"
                       value={category.amount}
                       onChange={(e) => updateBudgetCategory(category.id, 'amount', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="金额"
+                      prefix={<DollarSign className="w-3 h-3" />}
+                      inputClassName="text-sm"
                     />
                   </div>
-                  <input
+                  <EnhancedInput
                     type="text"
                     value={category.description}
                     onChange={(e) => updateBudgetCategory(category.id, 'description', e.target.value)}
-                    className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="说明"
+                    placeholder="预算说明（可选）"
+                    className="mt-3"
+                    inputClassName="text-sm"
                   />
-                </div>
+                </DraggableCard>
               ))}
 
-              <button
+              <motion.button
                 onClick={addBudgetCategory}
-                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
               >
-                + 添加预算分类
-              </button>
+                <Plus className="w-4 h-4" />
+                <span>添加预算分类</span>
+              </motion.button>
+              </div>
             </div>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+      </motion.div>
 
       {/* 2. AI智能场地分配管理 */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+      >
         <SectionHeader
           title="AI智能场地分配管理"
-          icon="🏢"
+          IconComponent={Building2}
           sectionKey="venue"
         />
-        {expandedSections.venue && (
-          <div className="p-4 space-y-4 bg-gray-50">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={data.venue.autoAssign}
-                onChange={(e) => handleNestedChange('venue', 'autoAssign', e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                启用AI智能分配（根据容量和设施自动匹配）
-              </span>
-            </label>
+        <AnimatePresence>
+          {expandedSections.venue && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-white">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <Switch
+                    checked={data.venue.autoAssign}
+                    onChange={(checked) => handleNestedChange('venue', 'autoAssign', checked)}
+                    label="启用AI智能分配"
+                    description="根据场地容量和设施自动匹配最佳方案"
+                    size="md"
+                  />
+                </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -610,38 +693,59 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
                 </div>
               ))}
 
-              <button
+              <motion.button
                 onClick={addVenue}
-                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
               >
-                + 添加场地
-              </button>
+                <Plus className="w-4 h-4" />
+                <span>添加场地</span>
+              </motion.button>
+              </div>
             </div>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+      </motion.div>
 
       {/* 3. 设定参与人员与资源 */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+      >
         <SectionHeader
           title="设定参与人员与资源"
-          icon="👨‍💼"
+          IconComponent={Users}
           sectionKey="personnel"
         />
-        {expandedSections.personnel && (
-          <div className="p-4 space-y-6 bg-gray-50">
+        <AnimatePresence>
+          {expandedSections.personnel && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-white">
             {/* 组织者 */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-semibold text-gray-800">
                   组织者团队
                 </label>
-                <button
+                <motion.button
                   onClick={() => addPerson('organizers')}
-                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-shadow flex items-center gap-2"
                 >
-                  + 添加组织者
-                </button>
+                  <Plus className="w-4 h-4" />
+                  <span>添加组织者</span>
+                </motion.button>
               </div>
               {data.personnel.organizers.map((person, index) => (
                 <div key={person.id} className="p-3 bg-white rounded-lg border border-gray-200 mb-2">
@@ -809,18 +913,26 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-      </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* 4. 配置赛事所需设备 */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+      >
         <SectionHeader
           title="配置赛事所需设备"
-          icon="💻"
+          IconComponent={Monitor}
           sectionKey="equipment"
           badge={data.equipment.length > 0 ? `${data.equipment.length} 项` : null}
         />
+        <AnimatePresence>
         {expandedSections.equipment && (
           <div className="p-4 space-y-4 bg-gray-50">
             {/* 设备统计 */}
@@ -890,23 +1002,33 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
               </div>
             ))}
 
-            <button
+            <motion.button
               onClick={addEquipment}
-              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
             >
-              + 添加设备
-            </button>
+              <Plus className="w-4 h-4" />
+              <span>添加设备</span>
+            </motion.button>
           </div>
         )}
-      </div>
+      </AnimatePresence>
+      </motion.div>
 
       {/* 5. 支持物资导号与导出 */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+      >
         <SectionHeader
           title="支持物资导号与导出"
-          icon="📦"
+          IconComponent={Package}
           sectionKey="materials"
         />
+        <AnimatePresence>
         {expandedSections.materials && (
           <div className="p-4 space-y-4 bg-gray-50">
             <div className="flex flex-wrap gap-3 mb-4">
@@ -999,23 +1121,33 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
               </div>
             ))}
 
-            <button
+            <motion.button
               onClick={addMaterial}
-              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
             >
-              + 添加物资
-            </button>
+              <Plus className="w-4 h-4" />
+              <span>添加物资</span>
+            </motion.button>
           </div>
         )}
-      </div>
+      </AnimatePresence>
+      </motion.div>
 
       {/* 6. 提供资源使用统计功能 */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+      >
         <SectionHeader
           title="资源使用统计概览"
-          icon="📊"
+          IconComponent={BarChart3}
           sectionKey="statistics"
         />
+        <AnimatePresence>
         {expandedSections.statistics && (
           <div className="p-4 bg-gray-50">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1092,7 +1224,8 @@ const ResourceConfigForm = ({ data, errors, onChange }) => {
             </div>
           </div>
         )}
-      </div>
+      </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
